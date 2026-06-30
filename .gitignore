@@ -1,0 +1,16 @@
+# Credentials and local config — never commit these
+*.json
+.config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
