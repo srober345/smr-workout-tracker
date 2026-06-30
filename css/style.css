@@ -177,6 +177,13 @@ main {
 .exercise-name { font-weight: 500; }
 .prescribed { color: var(--muted); font-size: .8rem; white-space: nowrap; }
 
+/* Shrink exercise name column so Prescribed and input stay visible on small screens */
+.exercise-table td:first-child { max-width: 130px; word-break: break-word; }
+@media (max-width: 400px) {
+  .exercise-table td:first-child { max-width: 90px; font-size: .8rem; }
+  .prescribed { font-size: .72rem; }
+}
+
 .weight-input {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -496,8 +503,7 @@ textarea.field-input { resize: vertical; min-height: 60px; font-family: inherit;
 @media (max-width: 540px) {
   .day-selector { grid-template-columns: 1fr 1fr; }
   .session-fields { grid-template-columns: 1fr; }
-  .exercise-table th:nth-child(2),
-  .exercise-table td:nth-child(2) { display: none; } /* hide prescribed on small */
+
   .volume-comparison { gap: .5rem; }
   .vol-block { min-width: 90px; padding: .6rem .75rem; }
   .vol-block .vb-value { font-size: 1.2rem; }
