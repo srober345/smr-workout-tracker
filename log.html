@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log Workout — SMR Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <span class="site-logo">SMR <span>Workout</span></span>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="log.html">Log</a>
+      <a href="exercises.html">Exercises</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Setup banner ──────────────────────────────────────────────── -->
+  <div class="setup-banner" id="setup-banner">
+    <strong>One-time setup:</strong>
+    <p>
+      Paste your Google Apps Script Web App URL below to enable saving to Google Sheets.
+      See the <a href="README.md" target="_blank">README</a> for instructions on creating the script.
+    </p>
+    <div class="input-row">
+      <input
+        type="url"
+        id="setup-url-input"
+        placeholder="https://script.google.com/macros/s/…/exec"
+        autocomplete="off"
+        spellcheck="false"
+      >
+      <button class="btn btn-ghost btn-sm" id="setup-save-btn">Save URL</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ LOG SCREEN ══════════════════════════════ -->
+  <div id="log-screen">
+
+    <!-- Day selector -->
+    <div class="card" style="padding-bottom:.6rem;">
+      <div class="card-title">Select Day Type</div>
+      <div class="day-selector" id="day-selector"></div>
+    </div>
+
+    <!-- Exercise table -->
+    <div class="card">
+      <div class="card-title">Exercises</div>
+      <table class="exercise-table">
+        <thead>
+          <tr>
+            <th>Exercise</th>
+            <th>Prescribed</th>
+            <th style="text-align:right">Weight</th>
+            <th style="text-align:right">Volume</th>
+          </tr>
+        </thead>
+        <tbody id="exercise-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Running totals -->
+    <div class="totals-bar">
+      <div class="stat">
+        <span class="stat-label">Total Volume</span>
+        <span class="stat-value accent" id="total-vol">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Exercises Logged</span>
+        <span class="stat-value" id="total-logged">0 / 0</span>
+      </div>
+    </div>
+
+    <!-- Session fields -->
+    <div class="card">
+      <div class="card-title">Session Notes</div>
+      <div class="session-fields">
+        <div class="field-group">
+          <label class="field-label" for="elbow-pain">Elbow Pain (0–10)</label>
+          <input
+            class="field-input"
+            id="elbow-pain"
+            type="number"
+            inputmode="numeric"
+            min="0" max="10" step="1"
+            placeholder="0 = none"
+          >
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="notes">Notes</label>
+          <textarea class="field-input" id="notes" placeholder="Optional…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="save-btn">Save Workout &amp; See Report</button>
+
+  </div><!-- /log-screen -->
+
+
+  <!-- ══════════════════════ SUMMARY SCREEN ══════════════════════════ -->
+  <div id="summary-screen">
+
+    <div class="report-header">
+      <div class="big-date" id="rpt-date"></div>
+      <h2>Workout Complete 🎯</h2>
+      <span class="day-badge" id="rpt-day"></span>
+    </div>
+
+    <!-- Alerts -->
+    <div id="rpt-alerts"></div>
+
+    <!-- Volume comparison -->
+    <div class="card">
+      <div class="card-title">Volume vs Last Session</div>
+      <div class="volume-comparison">
+        <div class="vol-block">
+          <div class="vb-label">Today</div>
+          <div class="vb-value" id="rpt-vol">—</div>
+          <div class="vb-sub">lbs</div>
+        </div>
+        <div class="flex-center" style="font-size:1.3rem;color:var(--muted);">→</div>
+        <div class="vol-block">
+          <div class="vb-label">Prior Session</div>
+          <div class="vb-value" id="rpt-prior-vol">—</div>
+          <div class="vb-sub" id="rpt-prior-label">—</div>
+        </div>
+        <div class="flex-center">
+          <span class="change-pill neutral" id="rpt-change">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exercise breakdown -->
+    <div class="card">
+      <div class="card-title">Exercise Breakdown</div>
+      <table class="exercise-summary-table">
+        <thead>
+          <tr>
+            <th>Exercise</th>
+            <th>Rx</th>
+            <th>Weight</th>
+            <th>Volume</th>
+          </tr>
+        </thead>
+        <tbody id="rpt-exercises"></tbody>
+      </table>
+      <div class="mt-1 hidden" id="rpt-notes-row">
+        <span class="text-muted" style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;">Notes — </span>
+        <span id="rpt-notes" style="font-size:.88rem;"></span>
+      </div>
+    </div>
+
+    <button class="btn btn-ghost" id="back-btn" style="width:100%;justify-content:center;">
+      ← Log Another Workout
+    </button>
+
+  </div><!-- /summary-screen -->
+
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/main.js"></script>
+<script src="js/log.js"></script>
+</body>
+</html>

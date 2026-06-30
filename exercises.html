@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exercises — SMR Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <span class="site-logo">SMR <span>Workout</span></span>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="log.html">Log</a>
+      <a href="exercises.html">Exercises</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-title">Exercise Reference</div>
+    <p style="font-size:.85rem;color:var(--muted);">Prescribed sets × reps for each day type. Use as a quick reference at the gym.</p>
+  </div>
+
+  <div id="ex-root"></div>
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/main.js"></script>
+<script>
+  const root = document.getElementById("ex-root");
+  DAYS.forEach(day => {
+    const sec = document.createElement("div");
+    sec.className = "ex-section card";
+    const rx = ex => `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
+    sec.innerHTML = `
+      <h2>${day.label}</h2>
+      <ul class="ex-list">
+        ${day.exercises.map(ex => `
+          <li class="ex-item">
+            <span class="ex-name">${ex.name}</span>
+            <span class="ex-rx">${rx(ex)}</span>
+          </li>`).join("")}
+      </ul>`;
+    root.appendChild(sec);
+  });
+</script>
+</body>
+</html>

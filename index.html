@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SMR Workout Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <span class="site-logo">SMR <span>Workout</span></span>
+    <nav>
+      <a href="index.html" class="active">Home</a>
+      <a href="log.html">Log</a>
+      <a href="exercises.html">Exercises</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Strength &amp; Cardio Tracker</h1>
+    <p>5-day split with pull-volume monitoring for elbow health. Log from your phone, sync to Google Sheets.</p>
+    <a href="log.html" class="btn btn-primary cta" style="display:inline-flex;width:auto;">
+      Log Today's Workout →
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Weekly Split</div>
+    <div class="split-grid">
+      <div class="split-card">
+        <h3>Lower / Push</h3>
+        <ul>
+          <li>Leg Press / Goblet Squat</li>
+          <li>Romanian Deadlift</li>
+          <li>Chest Press (cable/machine)</li>
+          <li>Leg Curl Machine</li>
+          <li>Calf Raises</li>
+          <li>Pallof Press</li>
+        </ul>
+      </div>
+      <div class="split-card">
+        <h3>Pull</h3>
+        <ul>
+          <li>Lat Pulldown</li>
+          <li>Chest-Supported Row</li>
+          <li>Cable Face Pulls</li>
+          <li>Reverse Fly Machine</li>
+          <li>Wrist Flexor Isometric (PT)</li>
+        </ul>
+      </div>
+      <div class="split-card">
+        <h3>Full Body / Golf</h3>
+        <ul>
+          <li>Trap Bar Deadlift</li>
+          <li>Cable Woodchoppers / Med Ball</li>
+          <li>Single-Leg Split Squat</li>
+          <li>Shoulder External Rotation</li>
+        </ul>
+      </div>
+      <div class="split-card">
+        <h3>Cardio (×2)</h3>
+        <ul>
+          <li>Intervals: Bike / Rower</li>
+          <li>Zone 2: 35–45 min easy</li>
+          <li>PT Stretching routine</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Elbow Safety</div>
+    <p style="font-size:.88rem;color:var(--muted);line-height:1.6;">
+      Pull-day volume is automatically compared to your last pull session after each log.
+      A warning fires if volume jumps more than <strong style="color:var(--text);">20%</strong>
+      week-over-week, and a deload recommendation appears if elbow pain is logged at
+      <strong style="color:var(--text);">3 or higher</strong>.
+    </p>
+  </div>
+</main>
+
+<script src="js/main.js"></script>
+</body>
+</html>
