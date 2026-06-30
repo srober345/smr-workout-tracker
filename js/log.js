@@ -74,36 +74,75 @@ function selectDay(idx) {
 const tableBody    = document.getElementById("exercise-body");
 const totalVolEl   = document.getElementById("total-vol");
 const totalLoggedEl= document.getElementById("total-logged");
+const thWeight     = document.getElementById("th-weight");
+const thVolume     = document.getElementById("th-volume");
+const totalsBar    = document.querySelector(".totals-bar");
 
-// weights[dayId][exerciseIndex] = string
+// weightState[dayId][exerciseIndex] = string (lbs for strength, minutes for cardio)
 const weightState  = {};
 
+function isCardioDay(day) {
+  return day.id === "cardio-intervals" || day.id === "cardio-zone2";
+}
+
 function renderExerciseTable() {
-  const day = DAYS[activeDayIdx];
+  const day    = DAYS[activeDayIdx];
+  const cardio = isCardioDay(day);
   if (!weightState[day.id]) weightState[day.id] = {};
+
+  // Show/hide weight & volume columns and totals bar
+  thWeight.textContent          = cardio ? "Duration" : "Weight";
+  thWeight.style.textAlign      = "right";
+  thVolume.classList.toggle("hidden", cardio);
+  totalsBar.classList.toggle("hidden", cardio);
 
   tableBody.innerHTML = "";
   day.exercises.forEach((ex, i) => {
-    const vol = calcVol(ex, weightState[day.id][i]);
-    const rx  = `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
-    const tr  = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="exercise-name">${ex.name}</td>
-      <td class="prescribed">${rx}</td>
-      <td>
-        <input
-          type="number"
-          inputmode="decimal"
-          class="weight-input${weightState[day.id][i] ? " has-value" : ""}"
-          placeholder="lbs"
-          value="${weightState[day.id][i] || ""}"
-          data-idx="${i}"
-          min="0"
-          step="2.5"
-        >
-      </td>
-      <td class="vol-cell">${vol > 0 ? fmt(vol) : "—"}</td>
-    `;
+    const savedVal = weightState[day.id][i] || "";
+    const rx = cardio
+      ? (ex.note || `${ex.sets}×${ex.reps}`)
+      : `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
+
+    const tr = document.createElement("tr");
+
+    if (cardio) {
+      tr.innerHTML = `
+        <td class="exercise-name">${ex.name}</td>
+        <td class="prescribed">${rx}</td>
+        <td>
+          <input
+            type="number"
+            inputmode="decimal"
+            class="weight-input${savedVal ? " has-value" : ""}"
+            placeholder="min"
+            value="${savedVal}"
+            data-idx="${i}"
+            min="0"
+            step="1"
+          >
+        </td>
+      `;
+    } else {
+      const vol = calcVol(ex, savedVal);
+      tr.innerHTML = `
+        <td class="exercise-name">${ex.name}</td>
+        <td class="prescribed">${rx}</td>
+        <td>
+          <input
+            type="number"
+            inputmode="decimal"
+            class="weight-input${savedVal ? " has-value" : ""}"
+            placeholder="lbs"
+            value="${savedVal}"
+            data-idx="${i}"
+            min="0"
+            step="2.5"
+          >
+        </td>
+        <td class="vol-cell">${vol > 0 ? fmt(vol) : "—"}</td>
+      `;
+    }
+
     tableBody.appendChild(tr);
   });
 
@@ -113,20 +152,23 @@ function renderExerciseTable() {
 }
 
 function onWeightChange(e) {
-  const inp = e.target;
-  const idx = parseInt(inp.dataset.idx, 10);
-  const day = DAYS[activeDayIdx];
-  const val = inp.value;
+  const inp    = e.target;
+  const idx    = parseInt(inp.dataset.idx, 10);
+  const day    = DAYS[activeDayIdx];
+  const val    = inp.value;
+  const cardio = isCardioDay(day);
 
   weightState[day.id][idx] = val;
   inp.classList.toggle("has-value", !!val);
 
-  // update vol cell inline
-  const ex  = day.exercises[idx];
-  const vol = calcVol(ex, val);
-  inp.closest("tr").querySelector(".vol-cell").textContent = vol > 0 ? fmt(vol) : "—";
-
-  updateTotals();
+  if (!cardio) {
+    const ex  = day.exercises[idx];
+    const vol = calcVol(ex, val);
+    inp.closest("tr").querySelector(".vol-cell").textContent = vol > 0 ? fmt(vol) : "—";
+    updateTotals();
+  } else {
+    updateCardioLogged();
+  }
 }
 
 function calcVol(ex, weightStr) {
@@ -136,15 +178,19 @@ function calcVol(ex, weightStr) {
 }
 
 function updateTotals() {
-  const day  = DAYS[activeDayIdx];
+  const day   = DAYS[activeDayIdx];
   const state = weightState[day.id] || {};
   let total = 0, logged = 0;
   day.exercises.forEach((ex, i) => {
     const v = calcVol(ex, state[i]);
     if (v > 0) { total += v; logged++; }
   });
-  totalVolEl.textContent   = fmt(total);
+  totalVolEl.textContent    = fmt(total);
   totalLoggedEl.textContent = `${logged} / ${day.exercises.length}`;
+}
+
+function updateCardioLogged() {
+  /* totals bar is hidden on cardio days — nothing to update */
 }
 
 // Initial render
@@ -157,20 +203,27 @@ const elbowPainEl  = document.getElementById("elbow-pain");
 const notesEl      = document.getElementById("notes");
 
 saveBtn.addEventListener("click", async () => {
-  const day   = DAYS[activeDayIdx];
-  const state = weightState[day.id] || {};
+  const day    = DAYS[activeDayIdx];
+  const state  = weightState[day.id] || {};
+  const cardio = isCardioDay(day);
 
-  const exercises = day.exercises.map((ex, i) => ({
-    name:   ex.name,
-    sets:   ex.sets,
-    reps:   ex.reps,
-    note:   ex.note || "",
-    weight: parseFloat(state[i]) || 0,
-    volume: calcVol(ex, state[i]),
-  })).filter(e => e.weight > 0);
+  const exercises = day.exercises.map((ex, i) => {
+    const raw      = parseFloat(state[i]) || 0;
+    const protocol = ex.note ? `${ex.sets}×${ex.reps} ${ex.note}` : `${ex.sets}×${ex.reps}`;
+    return {
+      name:     ex.name,
+      sets:     ex.sets,
+      reps:     ex.reps,
+      note:     ex.note || "",
+      protocol, // cardio summary label
+      weight:   raw,   // duration (min) for cardio, lbs for strength
+      volume:   cardio ? 0 : calcVol(ex, state[i]),
+    };
+  }).filter(e => e.weight > 0);
 
   if (exercises.length === 0) {
-    alert("Please enter at least one weight before saving.");
+    const unit = cardio ? "duration" : "weight";
+    alert(`Please enter at least one ${unit} before saving.`);
     return;
   }
 
@@ -254,9 +307,17 @@ function showSummary(session, hist) {
   summaryScreen.classList.add("visible");
 
   // Header
-  document.getElementById("rpt-date").textContent   = todayDisplay();
-  document.getElementById("rpt-day").textContent    = session.dayLabel;
-  document.getElementById("rpt-vol").textContent    = fmt(session.totalVolume);
+  const cardio = isCardioDay({ id: session.dayId });
+  document.getElementById("rpt-date").textContent = todayDisplay();
+  document.getElementById("rpt-day").textContent  = session.dayLabel;
+
+  const volCompCard = document.querySelector(".volume-comparison").closest(".card");
+  if (cardio) {
+    volCompCard.classList.add("hidden");
+  } else {
+    volCompCard.classList.remove("hidden");
+    document.getElementById("rpt-vol").textContent = fmt(session.totalVolume);
+  }
 
   // Prior session of same day type
   const prior = [...hist]
@@ -271,7 +332,9 @@ function showSummary(session, hist) {
 
   alertsEl.innerHTML = "";
 
-  if (prior) {
+  if (cardio) {
+    // No volume comparison for cardio days
+  } else if (prior) {
     priorVolEl.textContent   = fmt(prior.totalVolume);
     priorLabelEl.textContent = prior.date;
 
@@ -283,7 +346,6 @@ function showSummary(session, hist) {
       changePillEl.className   = "change-pill neutral";
       changePillEl.textContent = "—";
     } else {
-      const absPct = Math.abs(pct);
       if (pct > 20) {
         changePillEl.className   = "change-pill up-danger";
         changePillEl.textContent = fmtPct(pct);
@@ -305,29 +367,24 @@ function showSummary(session, hist) {
           </div>`;
       }
 
-      // Elbow pain deload alert
-      if (session.elbowPain !== null && session.elbowPain >= 3) {
-        alertsEl.innerHTML += `
-          <div class="alert-box danger">
-            🔴 Elbow pain logged at ${session.elbowPain}/10.
-            Recommend a deload — reduce pull volume by 30–40% and check in with PT before your next pull session.
-          </div>`;
-      } else if (session.elbowPain === 0) {
-        alertsEl.innerHTML += `<div class="alert-box ok">✓ No elbow pain logged today. Good sign.</div>`;
-      }
     }
   } else {
     priorVolEl.textContent   = "—";
     priorLabelEl.textContent = "No prior session";
     changePillEl.className   = "change-pill neutral";
     changePillEl.textContent = "first session";
+  }
 
+  // Elbow pain alerts — shown for all non-cardio sessions
+  if (!cardio) {
     if (session.elbowPain !== null && session.elbowPain >= 3) {
       alertsEl.innerHTML += `
         <div class="alert-box danger">
           🔴 Elbow pain logged at ${session.elbowPain}/10.
-          Recommend a deload and PT check-in before your next pull session.
+          Recommend a deload — reduce pull volume by 30–40% and check in with PT before your next pull session.
         </div>`;
+    } else if (session.elbowPain === 0) {
+      alertsEl.innerHTML += `<div class="alert-box ok">✓ No elbow pain logged today. Good sign.</div>`;
     }
   }
 
@@ -335,14 +392,23 @@ function showSummary(session, hist) {
   const tbody = document.getElementById("rpt-exercises");
   tbody.innerHTML = "";
   session.exercises.forEach(ex => {
-    const rx = `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
-    tbody.innerHTML += `
-      <tr>
-        <td>${ex.name}</td>
-        <td class="text-muted">${rx}</td>
-        <td>${ex.weight > 0 ? ex.weight + " lbs" : "BW"}</td>
-        <td>${ex.volume > 0 ? fmt(ex.volume) : "—"}</td>
-      </tr>`;
+    const rx = ex.protocol || `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
+    if (cardio) {
+      tbody.innerHTML += `
+        <tr>
+          <td>${ex.name}</td>
+          <td class="text-muted">${rx}</td>
+          <td colspan="2" style="text-align:right;color:var(--muted)">${ex.weight > 0 ? ex.weight + " min" : "—"}</td>
+        </tr>`;
+    } else {
+      tbody.innerHTML += `
+        <tr>
+          <td>${ex.name}</td>
+          <td class="text-muted">${rx}</td>
+          <td>${ex.weight > 0 ? ex.weight + " lbs" : "BW"}</td>
+          <td>${ex.volume > 0 ? fmt(ex.volume) : "—"}</td>
+        </tr>`;
+    }
   });
 
   if (session.notes) {
