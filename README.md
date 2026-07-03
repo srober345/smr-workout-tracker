@@ -24,7 +24,7 @@ No build step. No framework. Plain HTML/CSS/JS — works directly from GitHub Pa
 4. Add these headers in row 1 (one per column, A through J):
 
    ```
-   Date | Day Type | Exercise | Sets | Reps | Weight (lbs) | Volume (lbs) | Elbow Pain (0-10) | Notes | Total Session Volume
+   Date | Day Type | Exercise | Sets | Reps | Weight / Duration | Volume (lbs) | Elbow Pain (0-10) | Notes | Total Session Volume
    ```
 
 ### 2 — Create the Apps Script
