@@ -85,6 +85,10 @@ function isCardioDay(day) {
   return day.id === "cardio-intervals" || day.id === "cardio-zone2" || day.id === "mobility-hip";
 }
 
+function isTimedCardioDay(day) {
+  return day.id === "cardio-intervals" || day.id === "cardio-zone2";
+}
+
 function renderExerciseTable() {
   const day    = DAYS[activeDayIdx];
   const cardio = isCardioDay(day);
@@ -99,7 +103,7 @@ function renderExerciseTable() {
   tableBody.innerHTML = "";
   day.exercises.forEach((ex, i) => {
     const savedVal = weightState[day.id][i] || "";
-    const rx = cardio
+    const rx = isTimedCardioDay(day)
       ? (ex.note || `${ex.sets}×${ex.reps}`)
       : `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
 
