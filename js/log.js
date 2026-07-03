@@ -26,6 +26,18 @@ function saveHistory(hist) {
 function getScriptUrl() { return localStorage.getItem(LS_KEY_URL) || ""; }
 function setScriptUrl(u) { localStorage.setItem(LS_KEY_URL, u.trim()); }
 
+// iOS clears localStorage for Home Screen web apps more aggressively than it
+// clears regular Safari tabs (Settings > Safari > Clear History and Website
+// Data wipes both; so can Intelligent Tracking Prevention or low-storage
+// eviction). If the Home Screen icon's URL carries ?sheeturl=..., re-seed
+// localStorage from it on every launch so the setup banner doesn't return
+// after a clear. See README for how to add the icon with this param.
+function bootstrapScriptUrlFromQuery() {
+  const fromQuery = new URLSearchParams(location.search).get("sheeturl");
+  if (fromQuery && fromQuery.startsWith("https://")) setScriptUrl(fromQuery);
+}
+bootstrapScriptUrlFromQuery();
+
 /* ── Setup banner ─────────────────────────────────────────────────── */
 const setupBanner  = document.getElementById("setup-banner");
 const setupInput   = document.getElementById("setup-url-input");

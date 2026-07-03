@@ -50,6 +50,14 @@ No build step. No framework. Plain HTML/CSS/JS — works directly from GitHub Pa
 
 Open `log.html` in your browser. A yellow setup banner will appear at the top asking for the Web App URL. Paste it in and click **Save URL**. The URL is stored in your browser's `localStorage` — you only need to do this once per device.
 
+> **iOS Home Screen tip:** iOS periodically clears `localStorage` for Home Screen web apps (Settings → Safari → Clear History and Website Data wipes it, and so can Intelligent Tracking Prevention or low-storage cleanup) — if that happens, the setup banner reappears. To make it survive a clear, add the Home Screen icon using the URL with your script URL embedded as a query param instead of the plain one:
+>
+> ```
+> https://<your-username>.github.io/<repo-name>/log.html?sheeturl=<URL-ENCODE-YOUR-SCRIPT-URL>
+> ```
+>
+> URL-encode the Apps Script URL (e.g. `https://script.google.com/…/exec` → `https%3A%2F%2Fscript.google.com%2F…%2Fexec`) before appending it. On launch the app reads `?sheeturl=` and re-saves it to `localStorage` automatically, so even after a clear the setup banner won't come back. If you already added the icon with the plain URL, delete it and re-add it with this one.
+
 ---
 
 ## Apps Script (paste into Extensions → Apps Script)
