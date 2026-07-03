@@ -35,6 +35,15 @@ const DAYS = [
     ],
   },
   {
+    id: "mobility-hip",
+    label: "Mobility — Hip",
+    exercises: [
+      { name: "Standing Marches (Active Hip Flexion Drives)", sets: 2, reps: 10, note: "per side" },
+      { name: "Half-Kneeling Hip Flexor Stretch",              sets: 3, reps: 30, note: "sec hold, per side, posterior pelvic tilt" },
+      { name: "90/90 Hip Switches",                             sets: 2, reps: 6,  note: "per side" },
+    ],
+  },
+  {
     id: "cardio-intervals",
     label: "Cardio — Intervals",
     exercises: [

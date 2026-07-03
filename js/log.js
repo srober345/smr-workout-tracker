@@ -82,7 +82,7 @@ const totalsBar    = document.querySelector(".totals-bar");
 const weightState  = {};
 
 function isCardioDay(day) {
-  return day.id === "cardio-intervals" || day.id === "cardio-zone2";
+  return day.id === "cardio-intervals" || day.id === "cardio-zone2" || day.id === "mobility-hip";
 }
 
 function renderExerciseTable() {
