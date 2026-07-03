@@ -81,17 +81,9 @@ const totalsBar    = document.querySelector(".totals-bar");
 // weightState[dayId][exerciseIndex] = string (lbs for strength, minutes for cardio)
 const weightState  = {};
 
-function isCardioDay(day) {
-  return day.id === "cardio-intervals" || day.id === "cardio-zone2" || day.id === "mobility-hip";
-}
-
-function isTimedCardioDay(day) {
-  return day.id === "cardio-intervals" || day.id === "cardio-zone2";
-}
-
 function renderExerciseTable() {
   const day    = DAYS[activeDayIdx];
-  const cardio = isCardioDay(day);
+  const cardio = isDurationLoggedDay(day);
   if (!weightState[day.id]) weightState[day.id] = {};
 
   // Show/hide weight & volume columns and totals bar
@@ -103,9 +95,7 @@ function renderExerciseTable() {
   tableBody.innerHTML = "";
   day.exercises.forEach((ex, i) => {
     const savedVal = weightState[day.id][i] || "";
-    const rx = isTimedCardioDay(day)
-      ? (ex.note || `${ex.sets}×${ex.reps}`)
-      : `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
+    const rx = formatRx(day, ex);
 
     const tr = document.createElement("tr");
 
@@ -123,6 +113,7 @@ function renderExerciseTable() {
             data-idx="${i}"
             min="0"
             step="1"
+            aria-label="${ex.name} duration in minutes"
           >
         </td>
       `;
@@ -141,6 +132,7 @@ function renderExerciseTable() {
             data-idx="${i}"
             min="0"
             step="2.5"
+            aria-label="${ex.name} weight in pounds"
           >
         </td>
         <td class="vol-cell">${vol > 0 ? fmt(vol) : "—"}</td>
@@ -160,7 +152,7 @@ function onWeightChange(e) {
   const idx    = parseInt(inp.dataset.idx, 10);
   const day    = DAYS[activeDayIdx];
   const val    = inp.value;
-  const cardio = isCardioDay(day);
+  const cardio = isDurationLoggedDay(day);
 
   weightState[day.id][idx] = val;
   inp.classList.toggle("has-value", !!val);
@@ -170,9 +162,8 @@ function onWeightChange(e) {
     const vol = calcVol(ex, val);
     inp.closest("tr").querySelector(".vol-cell").textContent = vol > 0 ? fmt(vol) : "—";
     updateTotals();
-  } else {
-    updateCardioLogged();
   }
+  // Duration-logged days have no volume/totals bar to update.
 }
 
 function calcVol(ex, weightStr) {
@@ -193,10 +184,6 @@ function updateTotals() {
   totalLoggedEl.textContent = `${logged} / ${day.exercises.length}`;
 }
 
-function updateCardioLogged() {
-  /* totals bar is hidden on cardio days — nothing to update */
-}
-
 // Initial render
 renderExerciseTable();
 updateTotals();
@@ -209,11 +196,11 @@ const notesEl      = document.getElementById("notes");
 saveBtn.addEventListener("click", async () => {
   const day    = DAYS[activeDayIdx];
   const state  = weightState[day.id] || {};
-  const cardio = isCardioDay(day);
+  const cardio = isDurationLoggedDay(day);
 
   const exercises = day.exercises.map((ex, i) => {
     const raw      = parseFloat(state[i]) || 0;
-    const protocol = ex.note ? `${ex.sets}×${ex.reps} ${ex.note}` : `${ex.sets}×${ex.reps}`;
+    const protocol = formatRx(day, ex);
     return {
       name:     ex.name,
       sets:     ex.sets,
@@ -290,7 +277,10 @@ async function postToSheets(url, session) {
   await fetch(url, {
     method: "POST",
     mode:   "no-cors",
-    headers: { "Content-Type": "application/json" },
+    // text/plain avoids a CORS preflight (application/json does not qualify as a
+    // "simple request"), which Apps Script Web Apps can't handle. The Apps Script
+    // side reads the raw body via e.postData.contents regardless of Content-Type.
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body:   JSON.stringify({ rows }),
   });
 }
@@ -311,7 +301,7 @@ function showSummary(session, hist) {
   summaryScreen.classList.add("visible");
 
   // Header
-  const cardio = isCardioDay({ id: session.dayId });
+  const cardio = isDurationLoggedDay({ id: session.dayId });
   document.getElementById("rpt-date").textContent = todayDisplay();
   document.getElementById("rpt-day").textContent  = session.dayLabel;
 
@@ -396,7 +386,8 @@ function showSummary(session, hist) {
   const tbody = document.getElementById("rpt-exercises");
   tbody.innerHTML = "";
   session.exercises.forEach(ex => {
-    const rx = ex.protocol || `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
+    // Older saved sessions (pre-`protocol` field) fall back to the same formatter.
+    const rx = ex.protocol || formatRx({ id: session.dayId }, ex);
     if (cardio) {
       tbody.innerHTML += `
         <tr>

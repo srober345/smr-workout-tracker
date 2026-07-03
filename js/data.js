@@ -1,5 +1,24 @@
 /* Exercise data — edit this file to add/change exercises */
 
+// True for day types logged by duration (minutes) rather than weight — no
+// weight/volume tracking, "Duration" input shown instead of "Weight".
+function isDurationLoggedDay(day) {
+  return day.id === "cardio-intervals" || day.id === "cardio-zone2" || day.id === "mobility-hip";
+}
+
+// True for day types whose prescription is a single timed block (e.g. "35–45 min"
+// or "7 rounds × 2 min") rather than a per-exercise sets×reps count.
+function isTimedBlockDay(day) {
+  return day.id === "cardio-intervals" || day.id === "cardio-zone2";
+}
+
+// Formats the prescribed protocol for an exercise, e.g. "3×10 per side".
+// Timed-block days fall back to just the note (e.g. "35–45 min") when present.
+function formatRx(day, ex) {
+  if (isTimedBlockDay(day) && ex.note) return ex.note;
+  return `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
+}
+
 const DAYS = [
   {
     id: "lower-push",
@@ -47,7 +66,7 @@ const DAYS = [
     id: "cardio-intervals",
     label: "Cardio — Intervals",
     exercises: [
-      { name: "Bike or Rower Intervals", sets: 7, reps: 1, note: "rounds × 2 min hard / 2 min easy" },
+      { name: "Bike or Rower Intervals", sets: 7, reps: 1, note: "7 rounds × 2 min hard / 2 min easy" },
     ],
   },
   {

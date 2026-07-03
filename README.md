@@ -103,7 +103,7 @@ function jsonResp(obj) {
 }
 ```
 
-> **Note on `no-cors`:** The site posts with `mode: "no-cors"` so the browser doesn't block cross-origin requests. This means the response is opaque — the site won't see whether the post succeeded. Check the Sheet directly to confirm rows are appearing after your first save.
+> **Note on `no-cors`:** The site posts with `mode: "no-cors"` so the browser doesn't block cross-origin requests, and with `Content-Type: text/plain;charset=utf-8` so the request stays a "simple request" and never triggers a CORS preflight (which Apps Script Web Apps can't answer). This means the response is opaque — the site won't see whether the post succeeded. Check the Sheet directly to confirm rows are appearing after your first save.
 
 ---
 

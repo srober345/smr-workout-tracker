@@ -35,14 +35,13 @@
   DAYS.forEach(day => {
     const sec = document.createElement("div");
     sec.className = "ex-section card";
-    const rx = ex => `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
     sec.innerHTML = `
       <h2>${day.label}</h2>
       <ul class="ex-list">
         ${day.exercises.map(ex => `
           <li class="ex-item">
             <span class="ex-name">${ex.name}</span>
-            <span class="ex-rx">${rx(ex)}</span>
+            <span class="ex-rx">${formatRx(day, ex)}</span>
           </li>`).join("")}
       </ul>`;
     root.appendChild(sec);
