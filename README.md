@@ -111,7 +111,18 @@ function jsonResp(obj) {
 }
 ```
 
-> **Note on `no-cors`:** The site posts with `mode: "no-cors"` so the browser doesn't block cross-origin requests, and with `Content-Type: text/plain;charset=utf-8` so the request stays a "simple request" and never triggers a CORS preflight (which Apps Script Web Apps can't answer). This means the response is opaque — the site won't see whether the post succeeded. Check the Sheet directly to confirm rows are appearing after your first save.
+> **Note on `no-cors`:** The site posts with `mode: "no-cors"` so the browser doesn't block cross-origin requests, and with `Content-Type: text/plain;charset=utf-8` so the request stays a "simple request" and never triggers a CORS preflight (which Apps Script Web Apps can't answer). This means the response is opaque — the site can't tell whether the *request* was accepted by the server. It can, however, tell whether a request was even sent (e.g. no Script URL configured, or the `fetch` itself threw) — see below.
+
+---
+
+## Recovering a session that didn't sync
+
+Each saved session is tagged with a sync status: `sent`, `no-url` (no Script URL was configured on this device when you saved), or `failed` (the `fetch` itself errored, e.g. offline). If a session isn't `sent`:
+
+- The summary screen shows a warning banner right after saving.
+- A **"N sessions haven't synced to Google Sheets"** banner appears at the top of the Log page with a **Resync Now** button. Once your Script URL is set up correctly, click it to resend every unsynced session from local history — no need to re-enter anything.
+
+This is most likely to happen on iOS Home Screen installs, where `localStorage` (and the saved Script URL) can get cleared out from under you — see the tip above about baking `?sheeturl=` into the Home Screen icon to avoid it.
 
 ---
 
