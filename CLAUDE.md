@@ -2,6 +2,8 @@
 
 ## Session Notes
 
+**Standing order: log to this section proactively, without being asked.** Before ending any turn that involved a notable fix, decision, debugging session, or unfinished work, add a dated entry below — don't wait for the user to say "remember this."
+
 Log key facts, decisions, and in-progress context here so future sessions can pick up where the last one left off. Add a dated entry whenever you make a notable architectural decision, learn an important constraint, or leave work unfinished. Keep entries short — a few lines each. Newest entries at the top.
 
 ### 2026-07-04
