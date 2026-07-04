@@ -60,6 +60,66 @@ setupSaveBtn.addEventListener("click", () => {
 
 refreshBanner();
 
+/* ── Sync banner (unsent sessions) ────────────────────────────────── */
+// Only sessions saved *after* this feature shipped carry a sheetsStatus —
+// older history entries are left alone so resync never re-posts a session
+// that predates sync tracking (and may already be in the Sheet).
+const syncBanner     = document.getElementById("sync-banner");
+const syncBannerText = document.getElementById("sync-banner-text");
+const syncResyncBtn  = document.getElementById("sync-resync-btn");
+
+function unsentSessions() {
+  return getHistory()
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => s.sheetsStatus && s.sheetsStatus !== "sent");
+}
+
+function refreshSyncBanner() {
+  const pending = unsentSessions();
+  if (pending.length === 0) {
+    syncBanner.style.display = "none";
+    return;
+  }
+  syncBanner.style.display = "block";
+  syncBannerText.textContent = pending.length === 1
+    ? "1 session hasn't synced to Google Sheets."
+    : `${pending.length} sessions haven't synced to Google Sheets.`;
+}
+
+syncResyncBtn.addEventListener("click", async () => {
+  const url = getScriptUrl();
+  if (!url) {
+    alert("Paste your Google Apps Script Web App URL above first, then resync.");
+    return;
+  }
+
+  syncResyncBtn.disabled = true;
+  syncResyncBtn.textContent = "Resyncing…";
+
+  const hist    = getHistory();
+  const pending = unsentSessions();
+  let sent = 0;
+
+  for (const { s, i } of pending) {
+    try {
+      await postToSheets(url, s);
+      hist[i].sheetsStatus = "sent";
+      sent++;
+    } catch (err) {
+      console.warn("Resync failed for session", i, err);
+      hist[i].sheetsStatus = "failed";
+    }
+  }
+
+  saveHistory(hist);
+  syncResyncBtn.disabled = false;
+  syncResyncBtn.textContent = "Resync Now";
+  refreshSyncBanner();
+  alert(`Resynced ${sent} of ${pending.length} session${pending.length === 1 ? "" : "s"}.`);
+});
+
+refreshSyncBanner();
+
 /* ── Day selector ─────────────────────────────────────────────────── */
 let activeDayIdx = 0;
 
@@ -246,7 +306,28 @@ saveBtn.addEventListener("click", async () => {
     elbowPain:   pain,
     notes:       notesEl.value.trim(),
     totalVolume,
+    sheetsStatus: "no-url", // "sent" | "no-url" | "failed" — surfaced in the summary and setup banner
   };
+
+  // POST to Apps Script *before* showing the summary, so a failure/skip is
+  // known and can be surfaced — previously the summary appeared regardless
+  // of sync outcome, so a missing Script URL (e.g. wiped by iOS) silently
+  // dropped the session with the user none the wiser.
+  const url = getScriptUrl();
+  if (url) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner"></span> Saving…';
+    try {
+      await postToSheets(url, session);
+      session.sheetsStatus = "sent";
+    } catch (err) {
+      console.warn("Sheets post failed:", err);
+      session.sheetsStatus = "failed";
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = "Save Workout &amp; See Report";
+    }
+  }
 
   // Save to history
   const hist = getHistory();
@@ -255,21 +336,7 @@ saveBtn.addEventListener("click", async () => {
 
   // Show summary
   showSummary(session, hist);
-
-  // POST to Apps Script (non-blocking)
-  const url = getScriptUrl();
-  if (url) {
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<span class="spinner"></span> Saving…';
-    try {
-      await postToSheets(url, session);
-    } catch (err) {
-      console.warn("Sheets post failed:", err);
-    } finally {
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = "Save Workout &amp; See Report";
-    }
-  }
+  refreshSyncBanner();
 });
 
 async function postToSheets(url, session) {
@@ -337,6 +404,21 @@ function showSummary(session, hist) {
   const alertsEl     = document.getElementById("rpt-alerts");
 
   alertsEl.innerHTML = "";
+
+  if (session.sheetsStatus === "no-url") {
+    alertsEl.innerHTML += `
+      <div class="alert-box warn">
+        ⚠️ Not synced to Google Sheets — no Script URL is set up on this device.
+        This session is saved locally only. Paste your Web App URL in the setup banner,
+        then use "Resync Now" to send it.
+      </div>`;
+  } else if (session.sheetsStatus === "failed") {
+    alertsEl.innerHTML += `
+      <div class="alert-box danger">
+        🔴 Google Sheets sync failed for this session. It's saved locally —
+        check your connection, then use "Resync Now" to retry.
+      </div>`;
+  }
 
   if (cardio) {
     // No volume comparison for cardio days
