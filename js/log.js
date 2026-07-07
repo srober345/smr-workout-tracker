@@ -101,8 +101,21 @@ syncResyncBtn.addEventListener("click", async () => {
   let sent = 0;
 
   for (const { s, i } of pending) {
+    // Only resend exercises not already confirmed sent, so resyncing a
+    // session that was merged from multiple saves doesn't duplicate rows
+    // for exercises that already made it into the Sheet.
+    const sentNames = s.sentExerciseNames || [];
+    const delta     = s.exercises.filter(e => !sentNames.includes(e.name));
+
+    if (delta.length === 0) {
+      hist[i].sheetsStatus = "sent";
+      sent++;
+      continue;
+    }
+
     try {
-      await postToSheets(url, s);
+      await postToSheets(url, { ...s, exercises: delta });
+      hist[i].sentExerciseNames = s.exercises.map(e => e.name);
       hist[i].sheetsStatus = "sent";
       sent++;
     } catch (err) {
@@ -297,28 +310,57 @@ saveBtn.addEventListener("click", async () => {
     return;
   }
 
-  const totalVolume = exercises.reduce((s, e) => s + e.volume, 0);
+  // If a session for today + this day type already exists, merge into it
+  // instead of creating a fragmented duplicate entry — this is what an
+  // accidental early tap on this button used to cause (a partial save,
+  // followed by another save once the rest of the workout was done).
+  const hist        = getHistory();
+  const existingIdx = hist.findIndex(s => s.date === today() && s.dayId === day.id);
+  const existing    = existingIdx !== -1 ? hist[existingIdx] : null;
+
+  const mergedByName = new Map();
+  if (existing) existing.exercises.forEach(e => mergedByName.set(e.name, e));
+  exercises.forEach(e => mergedByName.set(e.name, e)); // this save's values win on overlap
+  const mergedExercises = day.exercises
+    .map(ex => mergedByName.get(ex.name))
+    .filter(Boolean);
+
+  if (mergedExercises.length < day.exercises.length) {
+    const unit    = cardio ? "duration" : "weight";
+    const proceed = confirm(
+      `Only ${mergedExercises.length} of ${day.exercises.length} exercises have a ${unit} entered. Save anyway?`
+    );
+    if (!proceed) return;
+  }
+
+  const totalVolume = mergedExercises.reduce((s, e) => s + e.volume, 0);
   const session = {
     date:        today(),
     dayId:       day.id,
     dayLabel:    day.label,
-    exercises,
-    elbowPain:   pain,
-    notes:       notesEl.value.trim(),
+    exercises:   mergedExercises,
+    elbowPain:   pain !== null ? pain : (existing ? existing.elbowPain : null),
+    notes:       notesEl.value.trim() || (existing ? existing.notes : ""),
     totalVolume,
     sheetsStatus: "no-url", // "sent" | "no-url" | "failed" — surfaced in the summary and setup banner
+    sentExerciseNames: existing ? (existing.sentExerciseNames || []) : [],
   };
+
+  // Only POST exercises not already confirmed sent for this session, so a
+  // merge never re-sends rows that already made it into the Sheet.
+  const deltaExercises = mergedExercises.filter(e => !session.sentExerciseNames.includes(e.name));
 
   // POST to Apps Script *before* showing the summary, so a failure/skip is
   // known and can be surfaced — previously the summary appeared regardless
   // of sync outcome, so a missing Script URL (e.g. wiped by iOS) silently
   // dropped the session with the user none the wiser.
   const url = getScriptUrl();
-  if (url) {
+  if (url && deltaExercises.length > 0) {
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<span class="spinner"></span> Saving…';
     try {
-      await postToSheets(url, session);
+      await postToSheets(url, { ...session, exercises: deltaExercises });
+      session.sentExerciseNames = mergedExercises.map(e => e.name);
       session.sheetsStatus = "sent";
     } catch (err) {
       console.warn("Sheets post failed:", err);
@@ -327,11 +369,13 @@ saveBtn.addEventListener("click", async () => {
       saveBtn.disabled = false;
       saveBtn.innerHTML = "Save Workout &amp; See Report";
     }
+  } else if (url) {
+    // Everything in the merge was already sent — nothing new to POST.
+    session.sheetsStatus = "sent";
   }
 
-  // Save to history
-  const hist = getHistory();
-  hist.push(session);
+  // Save to history — update the existing same-day entry in place if merged.
+  if (existing) hist[existingIdx] = session; else hist.push(session);
   saveHistory(hist);
 
   // Show summary
@@ -392,11 +436,12 @@ function showSummary(session, hist) {
     document.getElementById("rpt-vol").textContent = fmt(session.totalVolume);
   }
 
-  // Prior session of same day type
+  // Prior session of same day type — excluded by reference rather than by
+  // position, since a merged save updates an existing entry in place instead
+  // of always appending at the end of history.
   const prior = [...hist]
     .reverse()
-    .slice(1)                           // exclude the session we just saved
-    .find(s => s.dayId === session.dayId);
+    .find(s => s !== session && s.dayId === session.dayId);
 
   const priorVolEl   = document.getElementById("rpt-prior-vol");
   const priorLabelEl = document.getElementById("rpt-prior-label");
