@@ -6,6 +6,11 @@
 
 Log key facts, decisions, and in-progress context here so future sessions can pick up where the last one left off. Add a dated entry whenever you make a notable architectural decision, learn an important constraint, or leave work unfinished. Keep entries short — a few lines each. Newest entries at the top.
 
+### 2026-07-07
+- Added `.github/workflows/auto-merge-claude-prs.yml`: any PR from a `claude/*` branch (i.e. opened by a Claude Code GUI/browser session) is merged automatically the moment it's opened — no manual step. This exists because the repo has no `main`; Claude Code GUI sessions were leaving unmerged `claude/*` branches around, risking a future session branching off a stale point and fragmenting work.
+- Had to flip the repo's Settings → Actions → General → "Workflow permissions" from the default `read` to `write` — otherwise `GITHUB_TOKEN` can't merge PRs even with `permissions: contents/pull-requests: write` set in the workflow file itself; the repo-level setting is a hard ceiling on what a workflow can request.
+- This entry itself is the live test: written on a `claude/test-automerge-verify` branch, opened as a PR, and left for the new workflow to auto-merge — confirms the whole pipeline end-to-end.
+
 ### 2026-07-04
 - Fixed and confirmed: Cardio — Zone 2 sessions now write to the Google Sheet. Root cause was two-layered: (1) the site posts with `mode: "no-cors"`, so a POST that reaches Apps Script but fails server-side looks identical to success on the client — no error ever surfaces. (2) The user's actual Apps Script project was a standalone/unbound "Untitled project" using `SpreadsheetApp.getActiveSpreadsheet()`, which returns null when unbound, so every write silently threw and was swallowed by the try/catch. Fixed by switching to `SpreadsheetApp.openById("1-bUIHEt9hy20i2ERMTKHwJeXrYeBJfo74fIi8UqBFLw")` in the Apps Script (user edited it directly, not in this git repo — the deployed script lives in Google's Apps Script editor, not tracked in version control).
 - Also had to force-resync the phone's saved Script URL via the `?sheeturl=` query-param bootstrap (already built into log.js for the iOS-localStorage-wipe case) after multiple rounds of URL/deployment confusion — the phone had been pointed at a stale URL that didn't match the fixed deployment.
