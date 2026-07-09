@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Progress — SMR Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <span class="site-logo">SMR <span>Workout</span></span>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="log.html">Log</a>
+      <a href="progress.html">Progress</a>
+      <a href="exercises.html">Exercises</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <div class="card">
+    <div class="card-title">Select Exercise</div>
+    <select id="exercise-select" class="field-input"></select>
+  </div>
+
+  <!-- ── No data yet ─────────────────────────────────────────────────── -->
+  <div class="card hidden" id="empty-state">
+    <div class="card-title">Progress</div>
+    <p class="text-muted" style="font-size:.88rem;">
+      No logged sessions for this exercise yet. Log a workout with a value entered
+      for it, then come back here to see your trend.
+    </p>
+  </div>
+
+  <!-- ── Chart ───────────────────────────────────────────────────────── -->
+  <div class="card hidden" id="chart-card">
+    <div class="card-title" id="chart-title">Weight Progress</div>
+
+    <div class="totals-bar">
+      <div class="stat">
+        <span class="stat-label">Latest</span>
+        <span class="stat-value accent" id="stat-latest">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Change</span>
+        <span id="stat-change">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Sessions</span>
+        <span class="stat-value" id="stat-count">—</span>
+      </div>
+    </div>
+
+    <div id="chart-wrap" style="position:relative;">
+      <svg id="chart-svg" width="100%" viewBox="0 0 640 280" style="display:block;overflow:visible;"></svg>
+      <div id="chart-tooltip" class="chart-tooltip hidden"></div>
+    </div>
+
+    <button class="btn btn-ghost btn-sm mt-1" id="toggle-table-btn">Show as table</button>
+
+    <div class="hidden mt-1" id="table-wrap" style="overflow-x:auto;">
+      <table class="exercise-summary-table" id="progress-table">
+        <thead>
+          <tr><th>Date</th><th>Day</th><th style="text-align:right;">Value</th></tr>
+        </thead>
+        <tbody id="progress-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/main.js"></script>
+<script src="js/progress.js"></script>
+</body>
+</html>
