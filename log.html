@@ -21,10 +21,17 @@
 
 <main>
 
+  <!-- ── Script URL settings toggle ───────────────────────────────────── -->
+  <!-- Always available, even once a URL is saved — otherwise there's no way
+       to see or correct a stale/wrong Script URL short of clearing localStorage. -->
+  <button class="btn btn-ghost btn-sm" id="show-url-settings-btn" style="margin-bottom:.5rem;">
+    Sheets Sync Settings
+  </button>
+
   <!-- ── Setup banner ──────────────────────────────────────────────── -->
   <div class="setup-banner" id="setup-banner">
-    <strong>One-time setup:</strong>
-    <p>
+    <strong id="setup-banner-heading">One-time setup:</strong>
+    <p id="setup-banner-desc">
       Paste your Google Apps Script Web App URL below to enable saving to Google Sheets.
       See the <a href="README.md" target="_blank">README</a> for instructions on creating the script.
     </p>
