@@ -39,13 +39,33 @@ function bootstrapScriptUrlFromQuery() {
 bootstrapScriptUrlFromQuery();
 
 /* ── Setup banner ─────────────────────────────────────────────────── */
-const setupBanner  = document.getElementById("setup-banner");
-const setupInput   = document.getElementById("setup-url-input");
-const setupSaveBtn = document.getElementById("setup-save-btn");
+const setupBanner        = document.getElementById("setup-banner");
+const setupHeading       = document.getElementById("setup-banner-heading");
+const setupDesc          = document.getElementById("setup-banner-desc");
+const setupInput         = document.getElementById("setup-url-input");
+const setupSaveBtn       = document.getElementById("setup-save-btn");
+const showUrlSettingsBtn = document.getElementById("show-url-settings-btn");
 
 function refreshBanner() {
-  if (!getScriptUrl()) setupBanner.classList.add("visible");
-  else setupBanner.classList.remove("visible");
+  const url = getScriptUrl();
+  if (!url) {
+    setupBanner.classList.add("visible");
+    setupHeading.textContent = "One-time setup:";
+    setupDesc.innerHTML = `Paste your Google Apps Script Web App URL below to enable saving to
+      Google Sheets. See the <a href="README.md" target="_blank">README</a> for instructions on
+      creating the script.`;
+    setupInput.value = "";
+    setupSaveBtn.textContent = "Save URL";
+  } else {
+    // Leave the banner's open/closed state as-is (toggled via show-url-settings-btn)
+    // rather than forcing it hidden — otherwise editing/re-saving the URL would
+    // immediately hide the banner again with no confirmation of what was saved.
+    setupHeading.textContent = "Google Sheets sync settings:";
+    setupDesc.innerHTML = `Currently saved Script URL — edit and re-save if it's stale or wrong
+      (e.g. pointing at an old Apps Script deployment):`;
+    setupInput.value = url;
+    setupSaveBtn.textContent = "Update URL";
+  }
 }
 
 setupSaveBtn.addEventListener("click", () => {
@@ -56,6 +76,12 @@ setupSaveBtn.addEventListener("click", () => {
   }
   setScriptUrl(val);
   refreshBanner();
+  alert("Script URL saved.");
+});
+
+showUrlSettingsBtn.addEventListener("click", () => {
+  setupBanner.classList.toggle("visible");
+  if (setupBanner.classList.contains("visible")) refreshBanner();
 });
 
 refreshBanner();
