@@ -133,6 +133,61 @@ syncResyncBtn.addEventListener("click", async () => {
 
 refreshSyncBanner();
 
+/* ── Force resend (recovery tool) ─────────────────────────────────── */
+// "sent" only means the POST reached Apps Script and got *a* response — since
+// the app posts with mode:"no-cors" it can't see whether Apps Script errored
+// server-side, so a session can be silently missing from the Sheet while
+// still showing as "sent" here. This button re-sends the most recent session
+// unconditionally (ignoring sentExerciseNames dedup) so it's recoverable
+// without waiting on a fix to that blind spot itself.
+const forceResendBanner = document.getElementById("force-resend-banner");
+const forceResendText   = document.getElementById("force-resend-text");
+const forceResendBtn    = document.getElementById("force-resend-btn");
+
+function refreshForceResendBanner() {
+  const hist = getHistory();
+  if (hist.length === 0) {
+    forceResendBanner.style.display = "none";
+    return;
+  }
+  const last = hist[hist.length - 1];
+  forceResendBanner.style.display = "block";
+  forceResendText.textContent =
+    `Last saved: ${last.date} — ${last.dayLabel}. If it didn't show up in the Sheet ` +
+    `despite showing as synced, resend it here.`;
+}
+
+forceResendBtn.addEventListener("click", async () => {
+  const url = getScriptUrl();
+  if (!url) {
+    alert("Paste your Google Apps Script Web App URL above first, then resend.");
+    return;
+  }
+  const hist = getHistory();
+  if (hist.length === 0) return;
+  const i    = hist.length - 1;
+  const last = hist[i];
+
+  forceResendBtn.disabled = true;
+  forceResendBtn.textContent = "Resending…";
+  try {
+    await postToSheets(url, last); // full session, not just the delta
+    hist[i].sentExerciseNames = last.exercises.map(e => e.name);
+    hist[i].sheetsStatus = "sent";
+    saveHistory(hist);
+    refreshSyncBanner();
+    alert(`Resent ${last.date} — ${last.dayLabel} to the Sheet.`);
+  } catch (err) {
+    console.warn("Force resend failed:", err);
+    alert("Resend failed — check your connection and try again.");
+  } finally {
+    forceResendBtn.disabled = false;
+    forceResendBtn.textContent = "Force Resend Last Session";
+  }
+});
+
+refreshForceResendBanner();
+
 /* ── Day selector ─────────────────────────────────────────────────── */
 let activeDayIdx = 0;
 
@@ -381,6 +436,7 @@ saveBtn.addEventListener("click", async () => {
   // Show summary
   showSummary(session, hist);
   refreshSyncBanner();
+  refreshForceResendBanner();
 });
 
 async function postToSheets(url, session) {

@@ -46,6 +46,13 @@
     <button class="btn btn-ghost btn-sm mt-1" id="sync-resync-btn" style="display:block;">Resync Now</button>
   </div>
 
+  <!-- ── Force resend (recovery from a silent Apps Script failure that the
+       "sent" status can't detect, since posts use no-cors) ─────────────── -->
+  <div class="alert-box" id="force-resend-banner" style="display:none;">
+    <span id="force-resend-text"></span>
+    <button class="btn btn-ghost btn-sm mt-1" id="force-resend-btn" style="display:block;">Force Resend Last Session</button>
+  </div>
+
   <!-- ══════════════════════ LOG SCREEN ══════════════════════════════ -->
   <div id="log-screen">
 
