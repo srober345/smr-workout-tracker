@@ -40,6 +40,7 @@ const DAYS = [
       { name: "Chest-Supported Row Machine",                sets: 3, reps: 10 },
       { name: "Cable Face Pulls",                           sets: 3, reps: 12 },
       { name: "Reverse Fly Machine",                        sets: 3, reps: 12 },
+      { name: "Triceps Pushdown",                           sets: 3, reps: 12 },
       { name: "Wrist Flexor/Pronator Isometric (PT)",       sets: 3, reps: 20, note: "sec hold" },
     ],
   },
