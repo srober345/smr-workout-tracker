@@ -214,6 +214,16 @@ forceResendBtn.addEventListener("click", async () => {
 
 refreshForceResendBanner();
 
+// Pull history back from the Sheet (best-effort — see history-sync.js) so a
+// localStorage wipe (iOS ITP / Home Screen eviction) doesn't quietly reset
+// "prior session" comparisons and the resync/force-resend banners above to
+// whatever's left on-device. Banners above already rendered with whatever
+// local history exists; re-render them once the sync settles.
+syncHistoryFromSheet().finally(() => {
+  refreshSyncBanner();
+  refreshForceResendBanner();
+});
+
 /* ── Day selector ─────────────────────────────────────────────────── */
 let activeDayIdx = 0;
 

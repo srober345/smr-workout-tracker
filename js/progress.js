@@ -283,4 +283,8 @@ function renderTable(points, unit) {
   });
 }
 
-render();
+// Pull history back from the Sheet first (best-effort — see history-sync.js)
+// so a wiped/thin localStorage doesn't make the chart look like it only
+// ever has "today" in it. Never blocks longer than the fetch timeout, and
+// render() still runs even if the sync fails.
+syncHistoryFromSheet().finally(render);

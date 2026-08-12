@@ -63,6 +63,11 @@ Open `log.html` in your browser. A yellow setup banner will appear at the top as
 ## Apps Script (paste into Extensions → Apps Script)
 
 ```javascript
+// Use openById (not getActiveSpreadsheet) — this script must work as a
+// standalone/unbound project, where getActiveSpreadsheet() returns null and
+// every write silently no-ops. Replace with your own Sheet's ID (from its
+// URL: docs.google.com/spreadsheets/d/<THIS_PART>/edit).
+const SHEET_ID   = "1-bUIHEt9hy20i2ERMTKHwJeXrYeBJfo74fIi8UqBFLw";
 const SHEET_NAME = "Log";
 
 function doPost(e) {
@@ -74,9 +79,7 @@ function doPost(e) {
       return jsonResp({ status: "error", message: "No rows provided" });
     }
 
-    const ss    = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_NAME);
-
+    const sheet = getSheet();
     if (!sheet) {
       return jsonResp({ status: "error", message: `Sheet "${SHEET_NAME}" not found` });
     }
@@ -104,6 +107,53 @@ function doPost(e) {
   }
 }
 
+// Lets the site read session history back out of the Sheet (see "Recovering
+// lost history" below) — the client hits this with a plain GET, so no CORS
+// preflight is involved and the response body is actually readable (unlike
+// the no-cors POSTs above).
+function doGet(e) {
+  try {
+    const sheet = getSheet();
+    if (!sheet) {
+      return jsonResp({ status: "error", message: `Sheet "${SHEET_NAME}" not found` });
+    }
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return jsonResp({ status: "ok", rows: [] });
+
+    const values = sheet.getRange(2, 1, lastRow - 1, 10).getValues();
+    const rows = values
+      .filter(r => r[0] !== "" && r[2] !== "") // skip blank rows
+      .map(r => ({
+        date:               formatDate(r[0]),
+        dayType:            r[1],
+        exercise:           r[2],
+        sets:               r[3],
+        reps:               r[4],
+        weight:             r[5],
+        volume:             r[6],
+        elbowPain:          r[7],
+        notes:              r[8],
+        totalSessionVolume: r[9],
+      }));
+
+    return jsonResp({ status: "ok", rows });
+
+  } catch (err) {
+    return jsonResp({ status: "error", message: err.toString() });
+  }
+}
+
+function getSheet() {
+  return SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+}
+
+function formatDate(v) {
+  return v instanceof Date
+    ? Utilities.formatDate(v, Session.getScriptTimeZone(), "yyyy-MM-dd")
+    : String(v);
+}
+
 function jsonResp(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
@@ -112,6 +162,10 @@ function jsonResp(obj) {
 ```
 
 > **Note on `no-cors`:** The site posts with `mode: "no-cors"` so the browser doesn't block cross-origin requests, and with `Content-Type: text/plain;charset=utf-8` so the request stays a "simple request" and never triggers a CORS preflight (which Apps Script Web Apps can't answer). This means the response is opaque — the site can't tell whether the *request* was accepted by the server. It can, however, tell whether a request was even sent (e.g. no Script URL configured, or the `fetch` itself threw) — see below.
+>
+> `doGet` doesn't have this problem — it's a plain GET with no custom headers, so it's a CORS-simple request too, but Apps Script Web Apps deployed with "Who has access: Anyone" *do* return a readable (non-opaque) body for GET, which is what makes the history-recovery feature below possible.
+
+> ⚠️ If you already have this script deployed from before, paste in the updated version above (it adds `doGet`, `getSheet()`, and `formatDate()` — your existing `doPost` logic is unchanged other than reusing `getSheet()`) and redeploy per **Deploy → New deployment** in step 3. Update your saved Script URL on-device afterward (see "Changing the Web App URL" below) since a new deployment gets a new URL.
 
 ---
 
@@ -123,6 +177,21 @@ Each saved session is tagged with a sync status: `sent`, `no-url` (no Script URL
 - A **"N sessions haven't synced to Google Sheets"** banner appears at the top of the Log page with a **Resync Now** button. Once your Script URL is set up correctly, click it to resend every unsynced session from local history — no need to re-enter anything.
 
 This is most likely to happen on iOS Home Screen installs, where `localStorage` (and the saved Script URL) can get cleared out from under you — see the tip above about baking `?sheeturl=` into the Home Screen icon to avoid it.
+
+---
+
+## Recovering lost history (Progress chart only shows recent days)
+
+`localStorage` is the only place session history lives on-device, and iOS can wipe it (Safari's Intelligent Tracking Prevention purges site data after ~7 days with no visit, and Home Screen web apps can lose storage under low-storage cleanup too). If that happens, both the Log page's "vs prior session" comparison and the Progress chart fall back to whatever's left locally — which right after a wipe is nothing, so Progress can end up only ever showing the most recent day you logged, never accumulating further back.
+
+Both `log.html` and `progress.html` now pull history back from the Sheet automatically on load (`js/history-sync.js`), as long as:
+
+- Your Script URL is saved on-device, **and**
+- The deployed Apps Script includes the `doGet` handler from the section above.
+
+On load, the page does a `GET <your-script-url>?action=history`, reconstructs sessions from the returned rows (grouped by date + day type), and merges them into local history — filling in whatever's missing without touching sessions that already look complete locally. This is best-effort and silent: if the fetch fails (offline, stale pre-`doGet` deployment, no Script URL yet), the page just falls back to whatever's already in `localStorage`, same as before this existed.
+
+If your deployed script predates `doGet`, redeploy it with the updated version above — see the warning under the Apps Script listing.
 
 ---
 
@@ -157,6 +226,8 @@ exercises.html    — quick-reference exercise list
 css/style.css     — all styles (dark theme, mobile-first)
 js/data.js        — exercise data (edit to add/change exercises)
 js/log.js         — log page logic (day selector, volume calc, save, summary)
+js/progress.js    — progress page logic (per-exercise trend chart)
+js/history-sync.js — pulls session history back from the Sheet on load (see "Recovering lost history")
 js/main.js        — shared nav active-link behavior
 README.md
 .gitignore
