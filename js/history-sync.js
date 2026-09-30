@@ -49,6 +49,7 @@ function buildSessionsFromRows(rows) {
         reps:   Number(r.reps)   || 0,
         weight: Number(r.weight) || 0,
         volume: Number(r.volume) || 0,
+        rir:    r.rir === "" || r.rir == null || isNaN(Number(r.rir)) ? null : Number(r.rir),
       }));
     const painRow  = groupRows.find((r) => r.elbowPain !== "" && r.elbowPain != null);
     const noteRow  = groupRows.find((r) => r.notes);
@@ -91,10 +92,11 @@ function mergeHistories(local, remote) {
     rs.exercises.forEach((e) => byName.set(e.name, e));
     ls.exercises.forEach((e) => byName.set(e.name, e)); // local wins on overlap
 
+    // Current program order first, then anything no longer in the program
+    // (retired exercises from older sessions) so program edits never drop history.
     const day = DAYS.find((d) => d.id === ls.dayId);
-    const exercises = day
-      ? day.exercises.map((ex) => byName.get(ex.name)).filter(Boolean)
-      : [...byName.values()];
+    const current = day ? day.exercises.map((ex) => byName.get(ex.name)).filter(Boolean) : [];
+    const exercises = [...current, ...[...byName.values()].filter((e) => !current.includes(e))];
 
     merged[i] = {
       ...ls,

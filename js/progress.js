@@ -31,10 +31,18 @@ function buildExerciseCatalog() {
       });
     });
   });
+  // Exercises dropped from the program still have history worth charting.
+  getHistory().forEach((s) => {
+    (s.exercises || []).forEach((ex) => {
+      if (seen.has(ex.name)) return;
+      seen.add(ex.name);
+      catalog.push({ name: ex.name, dayLabel: "Previous exercises", unit: "lbs" });
+    });
+  });
   return catalog;
 }
-const CATALOG = buildExerciseCatalog();
-const CATALOG_BY_NAME = new Map(CATALOG.map((c) => [c.name, c]));
+let CATALOG = buildExerciseCatalog();
+let CATALOG_BY_NAME = new Map(CATALOG.map((c) => [c.name, c]));
 
 function getPoints(name) {
   return getHistory()
@@ -52,24 +60,33 @@ function getPoints(name) {
 
 /* ── Exercise picker ──────────────────────────────────────────────── */
 const select = document.getElementById("exercise-select");
-const byDay  = new Map();
-CATALOG.forEach((item) => {
-  if (!byDay.has(item.dayLabel)) byDay.set(item.dayLabel, []);
-  byDay.get(item.dayLabel).push(item);
-});
-byDay.forEach((items, dayLabel) => {
-  const group = document.createElement("optgroup");
-  group.label = dayLabel;
-  items.forEach((item) => {
-    const opt = document.createElement("option");
-    opt.value = item.name;
-    opt.textContent = item.name;
-    group.appendChild(opt);
+
+// Rebuilt after the Sheet sync too, since that can bring in history for
+// exercises no longer in the program ("Previous exercises").
+function populatePicker() {
+  const current = select.value || localStorage.getItem(LS_KEY_LAST_EX);
+  CATALOG = buildExerciseCatalog();
+  CATALOG_BY_NAME = new Map(CATALOG.map((c) => [c.name, c]));
+  select.innerHTML = "";
+  const byDay = new Map();
+  CATALOG.forEach((item) => {
+    if (!byDay.has(item.dayLabel)) byDay.set(item.dayLabel, []);
+    byDay.get(item.dayLabel).push(item);
   });
-  select.appendChild(group);
-});
-const savedEx = localStorage.getItem(LS_KEY_LAST_EX);
-if (savedEx && CATALOG_BY_NAME.has(savedEx)) select.value = savedEx;
+  byDay.forEach((items, dayLabel) => {
+    const group = document.createElement("optgroup");
+    group.label = dayLabel;
+    items.forEach((item) => {
+      const opt = document.createElement("option");
+      opt.value = item.name;
+      opt.textContent = item.name;
+      group.appendChild(opt);
+    });
+    select.appendChild(group);
+  });
+  if (current && CATALOG_BY_NAME.has(current)) select.value = current;
+}
+populatePicker();
 select.addEventListener("change", () => {
   localStorage.setItem(LS_KEY_LAST_EX, select.value);
   render();
@@ -287,4 +304,7 @@ function renderTable(points, unit) {
 // so a wiped/thin localStorage doesn't make the chart look like it only
 // ever has "today" in it. Never blocks longer than the fetch timeout, and
 // render() still runs even if the sync fails.
-syncHistoryFromSheet().finally(render);
+syncHistoryFromSheet().finally(() => {
+  populatePicker();
+  render();
+});

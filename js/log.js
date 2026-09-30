@@ -254,13 +254,32 @@ const thWeight     = document.getElementById("th-weight");
 const thVolume     = document.getElementById("th-volume");
 const totalsBar    = document.querySelector(".totals-bar");
 
+const warmupEl     = document.getElementById("warmup-note");
+const rirHintEl    = document.getElementById("rir-hint");
+
 // weightState[dayId][exerciseIndex] = string (lbs for strength, minutes for cardio)
 const weightState  = {};
+// rirState[dayId][exerciseIndex] = string — reps left in the tank on the last set
+const rirState     = {};
+
+// An exercise counts as logged once a value is entered: > 0 normally, or
+// 0 allowed for bodyweight exercises (push-ups, dead bugs).
+function isLogged(ex, str) {
+  if (str === undefined || str === null || String(str).trim() === "") return false;
+  const w = parseFloat(str);
+  if (isNaN(w) || w < 0) return false;
+  return w > 0 || !!ex.bodyweight;
+}
 
 function renderExerciseTable() {
   const day    = DAYS[activeDayIdx];
   const cardio = isDurationLoggedDay(day);
   if (!weightState[day.id]) weightState[day.id] = {};
+  if (!rirState[day.id]) rirState[day.id] = {};
+
+  warmupEl.classList.toggle("hidden", !day.warmup);
+  warmupEl.innerHTML = day.warmup ? `<strong>Warm-up:</strong> ${day.warmup}` : "";
+  rirHintEl.classList.toggle("hidden", cardio);
 
   // Show/hide weight & volume columns and totals bar
   thWeight.textContent          = cardio ? "Duration" : "Weight";
@@ -294,7 +313,8 @@ function renderExerciseTable() {
         </td>
       `;
     } else {
-      const vol = calcVol(ex, savedVal);
+      const vol    = calcVol(ex, savedVal);
+      const rirVal = rirState[day.id][i] || "";
       tr.innerHTML = `
         <td class="exercise-name">${ex.name}</td>
         <td class="prescribed">${rx}</td>
@@ -303,12 +323,24 @@ function renderExerciseTable() {
             type="number"
             inputmode="decimal"
             class="weight-input${savedVal ? " has-value" : ""}"
-            placeholder="lbs"
+            placeholder="${ex.bodyweight ? "BW" : "lbs"}"
             value="${savedVal}"
             data-idx="${i}"
             min="0"
             step="2.5"
             aria-label="${ex.name} weight in pounds"
+          >
+          <input
+            type="number"
+            inputmode="numeric"
+            class="rir-input${rirVal !== "" ? " has-value" : ""}"
+            placeholder="RIR"
+            value="${rirVal}"
+            data-idx="${i}"
+            min="0"
+            max="10"
+            step="1"
+            aria-label="${ex.name} reps in reserve on last set"
           >
         </td>
         <td class="vol-cell">${vol > 0 ? fmt(vol) : "—"}</td>
@@ -320,6 +352,13 @@ function renderExerciseTable() {
 
   tableBody.querySelectorAll(".weight-input").forEach((inp) => {
     inp.addEventListener("input", onWeightChange);
+  });
+  tableBody.querySelectorAll(".rir-input").forEach((inp) => {
+    inp.addEventListener("input", (e) => {
+      const day = DAYS[activeDayIdx];
+      rirState[day.id][parseInt(e.target.dataset.idx, 10)] = e.target.value;
+      e.target.classList.toggle("has-value", e.target.value !== "");
+    });
   });
 }
 
@@ -343,6 +382,7 @@ function onWeightChange(e) {
 }
 
 function calcVol(ex, weightStr) {
+  if (ex.noVolume) return 0;
   const w = parseFloat(weightStr);
   if (!weightStr || isNaN(w) || w <= 0) return 0;
   return w * ex.sets * ex.reps;
@@ -353,8 +393,8 @@ function updateTotals() {
   const state = weightState[day.id] || {};
   let total = 0, logged = 0;
   day.exercises.forEach((ex, i) => {
-    const v = calcVol(ex, state[i]);
-    if (v > 0) { total += v; logged++; }
+    total += calcVol(ex, state[i]);
+    if (isLogged(ex, state[i])) logged++;
   });
   totalVolEl.textContent    = fmt(total);
   totalLoggedEl.textContent = `${logged} / ${day.exercises.length}`;
@@ -372,11 +412,14 @@ const notesEl      = document.getElementById("notes");
 saveBtn.addEventListener("click", async () => {
   const day    = DAYS[activeDayIdx];
   const state  = weightState[day.id] || {};
+  const rirs   = rirState[day.id] || {};
   const cardio = isDurationLoggedDay(day);
 
   const exercises = day.exercises.map((ex, i) => {
+    if (!isLogged(ex, state[i])) return null;
     const raw      = parseFloat(state[i]) || 0;
     const protocol = formatRx(day, ex);
+    const rirNum   = parseInt(rirs[i], 10);
     return {
       name:     ex.name,
       sets:     ex.sets,
@@ -385,8 +428,9 @@ saveBtn.addEventListener("click", async () => {
       protocol, // cardio summary label
       weight:   raw,   // duration (min) for cardio, lbs for strength
       volume:   cardio ? 0 : calcVol(ex, state[i]),
+      rir:      cardio || isNaN(rirNum) || rirNum < 0 ? null : rirNum,
     };
-  }).filter(e => e.weight > 0);
+  }).filter(Boolean);
 
   if (exercises.length === 0) {
     const unit = cardio ? "duration" : "weight";
@@ -421,6 +465,13 @@ saveBtn.addEventListener("click", async () => {
     const proceed = confirm(
       `Only ${mergedExercises.length} of ${day.exercises.length} exercises have a ${unit} entered. Save anyway?`
     );
+    if (!proceed) return;
+  }
+
+  // Elbow pain is the main signal for when to push pull/press work and when
+  // to back off, so nudge for it on lifting days rather than silently saving blank.
+  if (!cardio && pain === null && !(existing && existing.elbowPain != null)) {
+    const proceed = confirm("Elbow pain (0–10) isn't filled in. Save without it?");
     if (!proceed) return;
   }
 
@@ -484,6 +535,7 @@ async function postToSheets(url, session) {
     reps:              ex.reps,
     weight:            ex.weight,
     volume:            ex.volume,
+    rir:               ex.rir ?? "",
     elbowPain:         i === 0 ? (session.elbowPain ?? "") : "",
     notes:             i === 0 ? session.notes : "",
     totalSessionVolume: i === 0 ? session.totalVolume : "",
@@ -613,6 +665,19 @@ function showSummary(session, hist) {
     }
   }
 
+  // Effort coaching: 4+ reps left in the tank means the set was too easy to
+  // drive muscle growth — suggest adding weight next time.
+  if (!cardio) {
+    const easy = session.exercises.filter(e => typeof e.rir === "number" && e.rir >= 4);
+    if (easy.length > 0) {
+      alertsEl.innerHTML += `
+        <div class="alert-box warn">
+          ⬆️ Room to go up next time (4+ reps in reserve): ${easy.map(e => e.name).join(", ")}.
+          Aim to finish the last set with 1–3 reps left.
+        </div>`;
+    }
+  }
+
   // Exercise breakdown
   const tbody = document.getElementById("rpt-exercises");
   tbody.innerHTML = "";
@@ -631,7 +696,7 @@ function showSummary(session, hist) {
         <tr>
           <td>${ex.name}</td>
           <td class="text-muted">${rx}</td>
-          <td>${ex.weight > 0 ? ex.weight + " lbs" : "BW"}</td>
+          <td>${ex.weight > 0 ? ex.weight + " lbs" : "BW"}${typeof ex.rir === "number" ? `<br><span class="text-muted">RIR ${ex.rir}</span>` : ""}</td>
           <td>${ex.volume > 0 ? fmt(ex.volume) : "—"}</td>
         </tr>`;
     }
