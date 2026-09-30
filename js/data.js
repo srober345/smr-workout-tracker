@@ -64,7 +64,7 @@ const DAYS = [
       { name: "Trap Bar Deadlift",                           sets: 3, reps: 6  },
       { name: "Rotational Med Ball Throw",                   sets: 3, reps: 6,  note: "per side, explosive" },
       { name: "Single-Leg Split Squat or Step-Up",           sets: 3, reps: 8  },
-      { name: "Push-Up or Landmine Press",                   sets: 3, reps: 10, note: "(0 lbs = push-ups)", bodyweight: true },
+      { name: "Push-Up or Landmine Press",                   sets: 3, reps: 12, note: "3-sec lower, 1-sec pause (0 lbs = push-ups)", bodyweight: true },
       { name: "Single-Arm Cable Row",                        sets: 3, reps: 10, note: "per side" },
       { name: "Suitcase Carry or Side Plank",                sets: 3, reps: 40, note: "yd or sec per side", bodyweight: true, noVolume: true },
       { name: "Shoulder External Rotation (Cable or Band)",  sets: 3, reps: 12 },
