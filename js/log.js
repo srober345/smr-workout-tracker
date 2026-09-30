@@ -277,8 +277,11 @@ function renderExerciseTable() {
   if (!weightState[day.id]) weightState[day.id] = {};
   if (!rirState[day.id]) rirState[day.id] = {};
 
-  warmupEl.classList.toggle("hidden", !day.warmup);
-  warmupEl.innerHTML = day.warmup ? `<strong>Warm-up:</strong> ${day.warmup}` : "";
+  warmupEl.classList.toggle("hidden", !day.warmup && !day.plan);
+  warmupEl.innerHTML =
+    (day.warmup ? `<strong>Warm-up:</strong> ${day.warmup}` : "") +
+    (day.warmup && day.plan ? "<br>" : "") +
+    (day.plan ? `<strong>Order (~40 min):</strong> ${day.plan}` : "");
   rirHintEl.classList.toggle("hidden", cardio);
 
   // Show/hide weight & volume columns and totals bar
