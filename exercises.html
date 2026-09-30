@@ -38,6 +38,7 @@
     sec.className = "ex-section card";
     sec.innerHTML = `
       <h2>${day.label}</h2>
+      ${day.warmup ? `<p class="warmup-note"><strong>Warm-up:</strong> ${day.warmup}</p>` : ""}
       <ul class="ex-list">
         ${day.exercises.map(ex => `
           <li class="ex-item">

@@ -19,14 +19,23 @@ function formatRx(day, ex) {
   return `${ex.sets}×${ex.reps}${ex.note ? " " + ex.note : ""}`;
 }
 
+// Per-exercise flags:
+//   bodyweight: true — may be logged with 0 lbs (bodyweight); any added load is entered as weight.
+//   noVolume:   true — excluded from volume math (e.g. carries, where reps are yards).
+// Per-day `warmup` — shown above the exercise list on Log and Exercises.
+const HIP_WARMUP =
+  "5 min easy cardio, then the Mobility — Hip drills (Standing Marches, Half-Kneeling Hip Flexor Stretch, " +
+  "90/90 Hip Switches), then 1–2 light ramp-up sets of the first lift.";
+
 const DAYS = [
   {
     id: "lower-push",
     label: "Lower / Push",
+    warmup: HIP_WARMUP,
     exercises: [
-      { name: "Leg Press or Goblet Squat",    sets: 3, reps: 8  },
+      { name: "Leg Press or Goblet Squat",    sets: 3, reps: 8,  note: "fast up, slow down" },
       { name: "Romanian Deadlift",             sets: 3, reps: 8  },
-      { name: "Cable or Machine Chest Press",  sets: 3, reps: 10 },
+      { name: "Cable or Machine Chest Press",  sets: 4, reps: 10 },
       { name: "Lateral Raise",                 sets: 3, reps: 12 },
       { name: "Leg Curl Machine",              sets: 3, reps: 10 },
       { name: "Calf Raises",                   sets: 3, reps: 12 },
@@ -36,12 +45,13 @@ const DAYS = [
   {
     id: "pull",
     label: "Pull",
+    warmup: "5 min easy cardio, then 1–2 light ramp-up sets of Lat Pulldown.",
     exercises: [
       { name: "Lat Pulldown",                               sets: 3, reps: 10 },
       { name: "Chest-Supported Row Machine",                sets: 3, reps: 10 },
       { name: "Cable Face Pulls",                           sets: 3, reps: 12 },
-      { name: "Reverse Fly Machine",                        sets: 3, reps: 12 },
-      { name: "Biceps Curl",                                sets: 3, reps: 10 },
+      { name: "Dead Bug",                                   sets: 3, reps: 8,  note: "per side", bodyweight: true },
+      { name: "Biceps Curl",                                sets: 3, reps: 10, note: "hammer if elbow sore" },
       { name: "Triceps Pushdown",                           sets: 3, reps: 12 },
       { name: "Wrist Flexor/Pronator Isometric (PT)",       sets: 3, reps: 20, note: "sec hold" },
     ],
@@ -49,11 +59,15 @@ const DAYS = [
   {
     id: "full-body-golf",
     label: "Full Body / Golf",
+    warmup: HIP_WARMUP,
     exercises: [
-      { name: "Trap Bar Deadlift",                                 sets: 3, reps: 6  },
-      { name: "Cable Woodchoppers or Rotational Med Ball Throw",   sets: 3, reps: 8,  note: "per side" },
-      { name: "Single-Leg Split Squat or Step-Up",                 sets: 3, reps: 8  },
-      { name: "Shoulder External Rotation (Cable or Band)",        sets: 3, reps: 12 },
+      { name: "Trap Bar Deadlift",                           sets: 3, reps: 6  },
+      { name: "Rotational Med Ball Throw",                   sets: 3, reps: 6,  note: "per side, explosive" },
+      { name: "Single-Leg Split Squat or Step-Up",           sets: 3, reps: 8  },
+      { name: "Push-Up or Landmine Press",                   sets: 3, reps: 10, note: "(0 lbs = push-ups)", bodyweight: true },
+      { name: "Single-Arm Cable Row",                        sets: 3, reps: 10, note: "per side" },
+      { name: "Suitcase Carry or Side Plank",                sets: 3, reps: 40, note: "yd or sec per side", bodyweight: true, noVolume: true },
+      { name: "Shoulder External Rotation (Cable or Band)",  sets: 3, reps: 12 },
     ],
   },
   {

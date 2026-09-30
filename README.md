@@ -95,9 +95,12 @@ function doPost(e) {
       r.elbowPain         ?? "",   // only on first row of session
       r.notes             ?? "",   // only on first row of session
       r.totalSessionVolume ?? "",  // only on first row of session
+      r.rir               ?? "",   // reps in reserve on the last set
     ]);
 
-    sheet.getRange(sheet.getLastRow() + 1, 1, toAppend.length, 10)
+    if (sheet.getRange(1, 11).getValue() === "") sheet.getRange(1, 11).setValue("RIR (last set)");
+
+    sheet.getRange(sheet.getLastRow() + 1, 1, toAppend.length, 11)
          .setValues(toAppend);
 
     return jsonResp({ status: "ok", rowsWritten: toAppend.length });
@@ -121,7 +124,7 @@ function doGet(e) {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return jsonResp({ status: "ok", rows: [] });
 
-    const values = sheet.getRange(2, 1, lastRow - 1, 10).getValues();
+    const values = sheet.getRange(2, 1, lastRow - 1, 11).getValues();
     const rows = values
       .filter(r => r[0] !== "" && r[2] !== "") // skip blank rows
       .map(r => ({
@@ -135,6 +138,7 @@ function doGet(e) {
         elbowPain:          r[7],
         notes:              r[8],
         totalSessionVolume: r[9],
+        rir:                r[10],
       }));
 
     return jsonResp({ status: "ok", rows });
@@ -164,6 +168,8 @@ function jsonResp(obj) {
 > **Note on `no-cors`:** The site posts with `mode: "no-cors"` so the browser doesn't block cross-origin requests, and with `Content-Type: text/plain;charset=utf-8` so the request stays a "simple request" and never triggers a CORS preflight (which Apps Script Web Apps can't answer). This means the response is opaque — the site can't tell whether the *request* was accepted by the server. It can, however, tell whether a request was even sent (e.g. no Script URL configured, or the `fetch` itself threw) — see below.
 >
 > `doGet` doesn't have this problem — it's a plain GET with no custom headers, so it's a CORS-simple request too, but Apps Script Web Apps deployed with "Who has access: Anyone" *do* return a readable (non-opaque) body for GET, which is what makes the history-recovery feature below possible.
+
+> **RIR column (added 2026-09-30):** the Log page records reps in reserve per exercise, and this version of the script writes it to column K. Older deployments simply ignore the field, so nothing breaks; RIR stays on-device until you redeploy this version.
 
 > ⚠️ If you already have this script deployed from before, paste in the updated version above (it adds `doGet`, `getSheet()`, and `formatDate()` — your existing `doPost` logic is unchanged other than reusing `getSheet()`) and redeploy per **Deploy → New deployment** in step 3. Update your saved Script URL on-device afterward (see "Changing the Web App URL" below) since a new deployment gets a new URL.
 
