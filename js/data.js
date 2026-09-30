@@ -22,16 +22,19 @@ function formatRx(day, ex) {
 // Per-exercise flags:
 //   bodyweight: true — may be logged with 0 lbs (bodyweight); any added load is entered as weight.
 //   noVolume:   true — excluded from volume math (e.g. carries, where reps are yards).
-// Per-day `warmup` — shown above the exercise list on Log and Exercises.
+// Per-day `warmup` and `plan` (time-saving supersets to fit ~40 min) — shown
+// above the exercise list on Log and Exercises.
 const HIP_WARMUP =
-  "5 min easy cardio, then the Mobility — Hip drills (Standing Marches, Half-Kneeling Hip Flexor Stretch, " +
-  "90/90 Hip Switches), then 1–2 light ramp-up sets of the first lift.";
+  "3 min easy cardio, 1 round of the Mobility — Hip drills (Standing Marches, Half-Kneeling Hip Flexor " +
+  "Stretch, 90/90 Hip Switches), then 1 light ramp-up set of the first lift.";
 
 const DAYS = [
   {
     id: "lower-push",
     label: "Lower / Push",
     warmup: HIP_WARMUP,
+    plan: "Leg Press and RDL on their own (rest ~90 sec). Then superset Chest Press + Leg Curl, " +
+          "Lateral Raise + Calf Raises, and finish with Pallof Press. Rest ~60 sec between supersets.",
     exercises: [
       { name: "Leg Press or Goblet Squat",    sets: 3, reps: 8,  note: "fast up, slow down" },
       { name: "Romanian Deadlift",             sets: 3, reps: 8  },
@@ -45,13 +48,16 @@ const DAYS = [
   {
     id: "pull",
     label: "Pull",
-    warmup: "5 min easy cardio, then 1–2 light ramp-up sets of Lat Pulldown.",
+    warmup: "3 min easy cardio, then 1 light ramp-up set of Lat Pulldown.",
+    plan: "Superset Lat Pulldown + Dead Bug, Seated Cable Row + Face Pulls, Biceps Curl + Triceps Pushdown, " +
+          "then the Wrist Isometric. Rest ~60 sec between supersets. Golfer's elbow: use straps on pulls, " +
+          "stop 2–3 reps short, and back off if elbow pain hits 3/10.",
     exercises: [
-      { name: "Lat Pulldown",                               sets: 3, reps: 10 },
-      { name: "Chest-Supported Row Machine",                sets: 3, reps: 10 },
+      { name: "Lat Pulldown",                               sets: 3, reps: 10, note: "neutral grip, straps" },
+      { name: "Seated Cable Row",                           sets: 3, reps: 10, note: "V-handle, straps" },
       { name: "Cable Face Pulls",                           sets: 3, reps: 12 },
       { name: "Dead Bug",                                   sets: 3, reps: 8,  note: "per side", bodyweight: true },
-      { name: "Biceps Curl",                                sets: 3, reps: 10, note: "hammer if elbow sore" },
+      { name: "Biceps Curl",                                sets: 3, reps: 10, note: "hammer grip" },
       { name: "Triceps Pushdown",                           sets: 3, reps: 12 },
       { name: "Wrist Flexor/Pronator Isometric (PT)",       sets: 3, reps: 20, note: "sec hold" },
     ],
@@ -60,14 +66,16 @@ const DAYS = [
     id: "full-body-golf",
     label: "Full Body / Golf",
     warmup: HIP_WARMUP,
+    plan: "Trap Bar Deadlift on its own (rest ~2 min). Then superset Split Squat + Push-Ups, " +
+          "Iso-Lateral Row + Side Plank, and Woodchoppers + External Rotation. Rest ~60 sec between supersets.",
     exercises: [
-      { name: "Trap Bar Deadlift",                           sets: 3, reps: 6  },
-      { name: "Rotational Med Ball Throw",                   sets: 3, reps: 6,  note: "per side, explosive" },
-      { name: "Single-Leg Split Squat or Step-Up",           sets: 3, reps: 8  },
-      { name: "Push-Up or Landmine Press",                   sets: 3, reps: 10, note: "(0 lbs = push-ups)", bodyweight: true },
-      { name: "Single-Arm Cable Row",                        sets: 3, reps: 10, note: "per side" },
-      { name: "Suitcase Carry or Side Plank",                sets: 3, reps: 40, note: "yd or sec per side", bodyweight: true, noVolume: true },
-      { name: "Shoulder External Rotation (Cable or Band)",  sets: 3, reps: 12 },
+      { name: "Trap Bar Deadlift",                               sets: 3, reps: 6  },
+      { name: "Cable Woodchoppers or Rotational Med Ball Throw", sets: 3, reps: 8,  note: "per side, fast pull, slow return" },
+      { name: "Single-Leg Split Squat or Step-Up",               sets: 3, reps: 8  },
+      { name: "Push-Up or Landmine Press",                       sets: 3, reps: 12, note: "3-sec lower, 1-sec pause (0 lbs = push-ups)", bodyweight: true },
+      { name: "Iso-Lateral Row Machine",                         sets: 3, reps: 10, note: "both arms together, neutral grip" },
+      { name: "Side Plank or Suitcase Carry",                    sets: 3, reps: 30, note: "sec per side (carry only if elbow is calm)", bodyweight: true, noVolume: true },
+      { name: "Shoulder External Rotation (Cable or Band)",      sets: 3, reps: 12 },
     ],
   },
   {
